@@ -85,16 +85,37 @@ export async function searchLeads(
       ? `${icpText.slice(0, 280).replace(/\s+\S*$/, "")}…`
       : icpText;
 
-  // 2. Tavily: busca empresas + pessoas em fontes publicas.
+  // 2. Tavily: busca empresas + pessoas em fontes publicas. Fazemos 2
+  // buscas paralelas — uma focada em fontes de saude, outra generica — e
+  // concatenamos resultados para o Claude filtrar.
   let tavilyResults;
   try {
-    tavilyResults = await tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 8, {
-      includeDomains: LEAD_DOMAINS,
-      searchDepth: "advanced",
+    const [r1, r2] = await Promise.all([
+      tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 6, {
+        includeDomains: LEAD_DOMAINS,
+        searchDepth: "advanced",
+      }).catch(() => []),
+      tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 6, {
+        searchDepth: "advanced",
+      }).catch(() => []),
+    ]);
+    tavilyResults = [...r1, ...r2];
+    // dedup por url
+    const seen = new Set<string>();
+    tavilyResults = tavilyResults.filter((r) => {
+      if (seen.has(r.url)) return false;
+      seen.add(r.url);
+      return true;
     });
   } catch (e) {
     return {
       error: `Tavily falhou: ${e instanceof Error ? e.message : String(e)}`,
+    };
+  }
+  if (tavilyResults.length === 0) {
+    return {
+      error:
+        "Tavily nao retornou resultados. Tente de novo ou ajuste os dominios.",
     };
   }
   if (tavilyResults.length === 0) {
