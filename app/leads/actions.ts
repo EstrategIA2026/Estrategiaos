@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { AI_ENABLED, CHAT_ENABLED } from "@/lib/config";
+import { LEAD_DOMAINS, LEAD_QUERY_SUFFIX } from "@/lib/leads/domains";
 import { structureLeads } from "@/lib/leads/structure";
 import { tavily } from "@/lib/leads/tavily";
 import { createClient } from "@/lib/supabase/server";
@@ -76,10 +77,13 @@ export async function searchLeads(
     return { error: "ICP vazio. Preencha o card antes de buscar." };
   }
 
-  // 2. Tavily: busca empresas.
+  // 2. Tavily: busca empresas + pessoas em fontes publicas.
   let tavilyResults;
   try {
-    tavilyResults = await tavily(icpText, Math.max(limit * 2, 6));
+    tavilyResults = await tavily(`${icpText} ${LEAD_QUERY_SUFFIX}`, Math.max(limit * 2, 6), {
+      includeDomains: LEAD_DOMAINS,
+      searchDepth: "advanced",
+    });
   } catch (e) {
     return {
       error: `Tavily falhou: ${e instanceof Error ? e.message : String(e)}`,
