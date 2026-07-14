@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 
 import { SciaTitle } from "@/components/ui/scia-title";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { AvatarForm } from "@/app/conta/avatar-form";
 import { EmailForm, NameForm, PasswordForm } from "@/app/conta/forms";
 import { getCurrentProfile } from "@/lib/auth/profile";
@@ -43,7 +44,15 @@ export default async function ContaPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 md:py-16">
-        <header className="mb-12">
+        <header className="relative mb-12">
+          <div className="absolute right-0 top-0">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/founder">
+                <ArrowLeft className="size-4" aria-hidden />
+                Voltar
+              </Link>
+            </Button>
+          </div>
           <p className="scia-tag mb-4">[ CONTA ]</p>
           <SciaTitle as="h1">Sua conta</SciaTitle>
           <p className="mt-3 text-base text-muted-foreground">
