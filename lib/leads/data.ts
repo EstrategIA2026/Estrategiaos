@@ -65,12 +65,13 @@ function parseLeadsMarkdown(body: string): LeadsData {
   const companies: Company[] = [];
   const people: Person[] = [];
 
-  // Divide em secoes por `## ` (heuristica: cada `## ` separa um lead).
+  // Divide em secoes por `## `. Cada secao e um lead (ou um intro).
+  // Body sempre comeca com `## ` (primeira secao), entao a primeira leva
+  // o prefixo `## ` que precisa ser removido do titulo.
   const sections = body.split(/\n##\s+/).filter(Boolean);
-  // A primeira secao, antes do primeiro `## `, e o "intro" e descartamos.
   for (const section of sections) {
     const lines = section.split("\n");
-    const title = lines[0]?.trim();
+    const title = (lines[0]?.trim() ?? "").replace(/^#+\s*/, "");
     if (!title) continue;
     const isPF = /PF/i.test(section);
     const kind: "PJ" | "PF" = isPF ? "PF" : "PJ";
