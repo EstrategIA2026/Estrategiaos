@@ -40,13 +40,12 @@ export default function SobrePage() {
 
 function Hero() {
   return (
-    <header className="mb-16 rounded-lg border bg-card p-8 md:p-12">
-      <p className="scia-tag mb-4">[ O QUE E ]</p>
-      <p className="mt-5 max-w-2xl text-lg text-muted-foreground md:text-xl">
+    <header className="mb-16">
+      <p className="max-w-3xl text-lg text-muted-foreground md:text-xl">
         Modelo de negocio de educacao em IA para coordenadores de nucleo em
         hospitais brasileiros.
       </p>
-      <p className="mt-3 max-w-2xl text-base text-muted-foreground">
+      <p className="mt-3 max-w-3xl text-base text-muted-foreground">
         O Estrateg[IA] e um negocio que comeca dando aulas de graca no
         YouTube. A partir do canal, ofereco agentes prontos para o
         coordenador usar no dia a dia e, se ele quiser, uma consultoria sob
