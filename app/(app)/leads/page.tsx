@@ -7,6 +7,7 @@ import { SciaTitle } from "@/components/ui/scia-title";
 import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { Topbar } from "@/components/layout/topbar";
 import { LeadsWorkspace } from "@/components/leads/leads-workspace";
+import { LeadsSearchButton } from "@/app/leads/leads-search-button";
 import { listCompanies, listPeople } from "@/lib/leads/data";
 import { countByStage, LEAD_STAGE_LABEL } from "@/lib/leads/types";
 
@@ -24,19 +25,22 @@ export default function LeadsPage() {
   return (
     <>
       <Topbar breadcrumb={<Breadcrumb items={[{ label: "Leads" }]} />}>
-        <header className="flex flex-col gap-1">
-          <SciaTitle as="h1">
-            Leads
-          </SciaTitle>
-          <p className="text-sm text-muted-foreground">
-            Mini CRM da prospecção. Os{" "}
-            <span className="font-medium text-foreground">agentes</span>{" "}
-            encontram <span className="font-medium text-foreground">empresas</span>{" "}
-            (PJ) e seus <span className="font-medium text-foreground">contatos</span>{" "}
-            (PF) na internet e depositam aqui para você qualificar e trabalhar no
-            funil.
-          </p>
-        </header>
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <header className="flex flex-col gap-1">
+            <SciaTitle as="h1">
+              Leads
+            </SciaTitle>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Mini CRM da prospecção. Os{" "}
+              <span className="font-medium text-foreground">agentes</span>{" "}
+              encontram <span className="font-medium text-foreground">empresas</span>{" "}
+              (PJ) e seus <span className="font-medium text-foreground">contatos</span>{" "}
+              (PF) na internet e depositam aqui para você qualificar e trabalhar no
+              funil.
+            </p>
+          </header>
+          <LeadsSearchButton />
+        </div>
       </Topbar>
 
       <div className="flex flex-col gap-6 px-6 pb-10 pt-6 md:px-8">

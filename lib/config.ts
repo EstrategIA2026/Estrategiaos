@@ -53,6 +53,12 @@ const schema = z
       z.string().min(1).optional(),
     ),
 
+    // Tavily — busca externa para prospeccao de leads (cabo solto).
+    TAVILY_API_KEY: z.preprocess(
+      emptyToUndefined,
+      z.string().min(1).optional(),
+    ),
+
     // --- Storage ---
     SUPABASE_STORAGE_BUCKET: z.string().default("attachments"),
   })
