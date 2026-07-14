@@ -21,6 +21,9 @@ export default function SobrePage() {
     <div className="flex min-h-dvh flex-col">
       <Topbar>
         <Breadcrumb items={[{ label: "Sobre", href: "/sobre" }]} />
+        <SciaTitle as="h1" className="mt-4">
+          Estrateg<span className="text-brand">[IA]</span>
+        </SciaTitle>
       </Topbar>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 md:py-16">
@@ -39,9 +42,6 @@ function Hero() {
   return (
     <header className="mb-16 rounded-lg border bg-card p-8 md:p-12">
       <p className="scia-tag mb-4">[ O QUE E ]</p>
-      <SciaTitle as="h1">
-        Estrateg<span className="text-brand">[IA]</span>
-      </SciaTitle>
       <p className="mt-5 max-w-2xl text-lg text-muted-foreground md:text-xl">
         Modelo de negocio de educacao em IA para coordenadores de nucleo em
         hospitais brasileiros.

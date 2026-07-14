@@ -48,7 +48,7 @@ export function ViewToggle({ value, className }: ViewToggleProps) {
         <SelectTrigger
           id="view-toggle"
           aria-label="Visualização"
-          className="h-10 w-36 rounded-full text-sm"
+          className="h-10 w-36 rounded-md text-sm"
         >
           <SelectValue placeholder="Visualização" />
         </SelectTrigger>

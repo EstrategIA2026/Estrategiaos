@@ -78,7 +78,7 @@ export function ConversationRail({ conversations }: ConversationRailProps) {
                 <div
                   key={conv.id}
                   className={cn(
-                    "group flex h-10 items-center gap-2 rounded-full pl-3.5 pr-1.5 text-sm transition-colors",
+                    "group flex h-10 items-center gap-2 rounded-md pl-3.5 pr-1.5 text-sm transition-colors",
                     active
                       ? "bg-muted font-semibold text-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground",
