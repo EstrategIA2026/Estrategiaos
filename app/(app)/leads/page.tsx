@@ -16,9 +16,11 @@ export const dynamic = "force-dynamic"; // reflete a base à medida que os agent
 /** KPIs destacados no topo — os estágios que o founder mais acompanha. */
 const KPI_STAGES = ["new", "qualified", "negotiating", "won"] as const;
 
-export default function LeadsPage() {
-  const companies = listCompanies();
-  const people = listPeople();
+export default async function LeadsPage() {
+  const [companies, people] = await Promise.all([
+    listCompanies(),
+    listPeople(),
+  ]);
   const counts = countByStage(companies);
   const isEmpty = companies.length === 0 && people.length === 0;
 

@@ -11,8 +11,8 @@ import { listCompanies } from "@/lib/leads/data";
 
 export const dynamic = "force-dynamic"; // reflete a base à medida que os agentes populam
 
-export default function OportunidadesPage() {
-  const companies = listCompanies();
+export default async function OportunidadesPage() {
+  const companies = await listCompanies();
 
   return (
     <>
