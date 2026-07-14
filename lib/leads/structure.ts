@@ -39,6 +39,9 @@ const STRUCTURE_SYSTEM = [
   "- Se o ICP mencionar regiao (ex: Nordeste), filtre por regiao.",
   "- Se o ICP mencionar porte (ex: 80-500 leitos), filtre por porte.",
   "- O `value` final de cada lead NAO PODE ser descricao longa. Use `note` para isso.",
+  "- REGRA CRITICA: se pelo menos 1 resultado Tavily tiver relacao minima com o ICP",
+  "  (mesmo que imperfeita), inclua no array. So devolva `leads: []` se NENHUM resultado",
+  "  tiver nada a ver com o ICP. E melhor incluir candidato fraco do que nada.",
 ].join(" ");
 
 const STRUCTURE_SHAPE = `{
@@ -68,7 +71,9 @@ function model(): LanguageModel {
     apiKey,
     baseURL: "https://api.kpalabz.com/v1",
   });
-  cachedModel = anthropic("claude-fable-5");
+  // Sonnet 5: melhor custo/beneficio pra extracao estruturada. Fable 5 e mais
+  // "criativo" e tende a devolver arrays vazios quando nao ha match perfeito.
+  cachedModel = anthropic("claude-sonnet-5");
   return cachedModel;
 }
 
@@ -96,7 +101,7 @@ export async function structureLeads(
 
   const { text } = await generateText({
     model: model(),
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
     providerOptions: {
       anthropic: { thinking: { type: "disabled" } },
     },
