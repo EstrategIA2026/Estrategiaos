@@ -117,6 +117,8 @@ export interface Person {
   addedAt: string;
   /** Observação do agente. */
   note?: string;
+  /** Link do LinkedIn. */
+  linkedin?: string;
 }
 
 /** Forma do arquivo de persistência `data/leads.json`. */

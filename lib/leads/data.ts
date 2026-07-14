@@ -73,14 +73,55 @@ function parseLeadsMarkdown(body: string): LeadsData {
     const lines = section.split("\n");
     const title = (lines[0]?.trim() ?? "").replace(/^#+\s*/, "");
     if (!title) continue;
+
+    // === Formato Hunter: `## Nome — Empresa\nCargo: ...\nEmail: ...\nLinkedIn: ...`
+    const companyLine = lines.find((l) => l.startsWith("— "));
+    if (companyLine) {
+      const companyName = companyLine.replace(/^—\s*/, "").trim();
+      const position =
+        lines.find((l) => l.startsWith("Cargo:"))?.replace(/^Cargo:\s*/, "").trim() ??
+        undefined;
+      const email =
+        lines.find((l) => l.startsWith("Email:"))?.replace(/^Email:\s*/, "").trim() ??
+        undefined;
+      const linkedin =
+        lines.find((l) => l.startsWith("LinkedIn:"))?.replace(/^LinkedIn:\s*/, "").trim() ??
+        undefined;
+      const sourceLine = lines.find((l) => l.startsWith("_("));
+      const source =
+        sourceLine?.match(/_\(([^·]+)·/)?.[1]?.trim() ?? "Hunter.io";
+
+      const personId = slugify(title);
+      const companyId = slugify(companyName);
+      const now = new Date().toISOString();
+
+      people.push({
+        id: personId,
+        name: title,
+        role: position,
+        email,
+        linkedin,
+        companyId,
+        source,
+        addedAt: now,
+      });
+      if (!companies.find((c) => c.id === companyId)) {
+        companies.push({
+          id: companyId,
+          name: companyName,
+          source,
+          stage: "new",
+          addedAt: now,
+        });
+      }
+      continue;
+    }
+
+    // === Formato Tavily antigo: `## Nome\n...\nFonte: url\n...Contatos: ...`
     const isPF = /PF/i.test(section);
     const kind: "PJ" | "PF" = isPF ? "PF" : "PJ";
-
-    // Extrai url "Fonte: <url>" na primeira linha que tenha.
     const fonteLine = lines.find((l) => l.startsWith("Fonte:"));
     const url = fonteLine?.replace(/^Fonte:\s*/, "").trim() ?? "";
-
-    // Pega o paragrafo apos o titulo (resumo).
     const summary = lines
       .slice(1)
       .filter(
@@ -94,7 +135,6 @@ function parseLeadsMarkdown(body: string): LeadsData {
       .trim()
       .slice(0, 400);
 
-    // Pega "Contatos: Nome (Cargo) <email>; Nome2 (Cargo2) <email2>" como people.
     const contatosLine = lines.find((l) => l.startsWith("Contatos:"));
     const contacts = (contatosLine ?? "")
       .replace(/^Contatos:\s*/, "")
@@ -104,37 +144,40 @@ function parseLeadsMarkdown(body: string): LeadsData {
 
     const id = slugify(title);
 
-    if (kind === "PJ") {
-      companies.push({
-        id,
-        name: title,
-        source: url || "Tavily + Claude Sonnet 5",
-        stage: "new",
-        addedAt: new Date().toISOString(),
-        note: summary,
-      });
-    } else {
-      // Para PF, joga como company com mesmo id e cria person na lista people.
-      companies.push({
-        id,
-        name: title,
-        source: url || "Tavily + Claude Sonnet 5",
-        stage: "new",
-        addedAt: new Date().toISOString(),
-        note: summary,
-      });
+    if (kind === "PF") {
       for (const contact of contacts) {
         const cname = contact.split("(")[0]?.trim() ?? contact;
         const role = /\(([^)]+)\)/.exec(contact)?.[1] ?? undefined;
+        const pid = slugify(cname);
         people.push({
-          id: slugify(cname),
+          id: pid,
           name: cname,
           role,
-          companyId: id,
+          companyId: slugify(title),
           source: "Tavily + Claude Sonnet 5",
           addedAt: new Date().toISOString(),
         });
       }
+      const cid = slugify(title);
+      if (!companies.find((c) => c.id === cid)) {
+        companies.push({
+          id: cid,
+          name: title,
+          source: url || "Tavily + Claude Sonnet 5",
+          stage: "new",
+          addedAt: new Date().toISOString(),
+          note: summary,
+        });
+      }
+    } else {
+      companies.push({
+        id,
+        name: title,
+        source: url || "Tavily + Claude Sonnet 5",
+        stage: "new",
+        addedAt: new Date().toISOString(),
+        note: summary,
+      });
     }
   }
 

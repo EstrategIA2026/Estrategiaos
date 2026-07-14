@@ -140,18 +140,54 @@ export async function searchLeadsHunter(
     };
   }
 
-  // 4. Hunter: para cada dominio, busca decisores.
+  // 4. Hunter: para cada dominio, busca decisores de SAUDE.
+  // Filtro focado: management + medical (exclui marketing, vendas, etc).
+  // Filtra nomes que claramente NAO sao da saude (heuristica simples).
+  const NON_HEALTH_KEYWORDS = [
+    "marketing", "sales", "vendas", "design", "engineering",
+    "finance", "recruit", "rh", "people", "it", "tecnologia",
+  ];
+  const isHealthName = (n: string) => {
+    const lower = n.toLowerCase();
+    // Palavras-chave que indicam saude/enfermagem.
+    const healthHints = [
+      "enferm", "nurse", "medic", "doutor", "dr.", "dra.",
+      "coord", "gestor", "supervisor", "scih", "ccih",
+      "qualidade", "epidemio", "fisioter", "psicolog",
+    ];
+    return healthHints.some((h) => lower.includes(h));
+  };
+
   const peopleByDomain: { domain: string; people: HunterPerson[] }[] = [];
   for (const d of domains) {
     try {
       const result = await hunterDomainSearch(d, {
         department: ["executive", "management", "operations", "medical"],
         seniority: ["executive", "senior"],
-        limit: 8,
+        limit: 12,
       });
-      peopleByDomain.push({ domain: d, people: result.people });
+      // Filtra por nome que pareca de saude.
+      const healthPeople = result.people.filter(
+        (p) =>
+          (isHealthName(p.fullName) ||
+            isHealthName(p.position ?? "") ||
+            isHealthName(p.department ?? "") ||
+            // Se nao tem keyword explicita, aceita se cargo eh management
+            (p.position ?? "").toLowerCase().includes("coord") ||
+            (p.position ?? "").toLowerCase().includes("chefia") ||
+            (p.position ?? "").toLowerCase().includes("diretor")),
+      );
+      // Se filtro de saude nao pegou nada, ainda tenta pegar os management
+      const final = healthPeople.length > 0
+        ? healthPeople
+        : result.people.filter(
+            (p) => !NON_HEALTH_KEYWORDS.some((k) =>
+              (p.position ?? "").toLowerCase().includes(k),
+            ),
+          );
+      peopleByDomain.push({ domain: d, people: final });
       debugLog.push(
-        `Hunter ${d}: ${result.people.length} pessoas (${result.organization ?? "?"})`,
+        `Hunter ${d}: ${result.people.length} -> ${final.length} (saude/coord)`,
       );
     } catch (e) {
       debugLog.push(
@@ -261,11 +297,7 @@ function renderHunterLeadsBlock(leads: HunterLead[]): string {
   return blocks.join("\n\n");
 }
 
-/**
- * Limpa TODOS os leads do card `validacao/leads`. Mantem a estrutura
- * (frontmatter com revision, status) mas zera o body. O proximo search
- * comeca do zero.
- */
+/** Limpa TODOS os leads do card `validacao/leads`. */
 export async function clearLeads(): Promise<{ error?: string; success?: string }> {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
@@ -306,4 +338,66 @@ export async function clearLeads(): Promise<{ error?: string; success?: string }
   revalidatePath("/leads");
   revalidatePath("/", "layout");
   return { success: "Todos os leads foram removidos." };
+}
+
+/** Parse leads de Hunter no formato `{ leads: [...] }` para o card. */
+export function parseHunterLeadsMarkdown(
+  body: string,
+): { companies: { id: string; name: string; source: string; stage: "new"; addedAt: string; note?: string }[]; people: { id: string; name: string; role?: string; email?: string; linkedin?: string; companyId?: string; source: string; addedAt: string }[] } {
+  const companies: { id: string; name: string; source: string; stage: "new"; addedAt: string; note?: string }[] = [];
+  const people: { id: string; name: string; role?: string; email?: string; linkedin?: string; companyId?: string; source: string; addedAt: string }[] = [];
+
+  const sections = body.split(/\n##\s+/).filter(Boolean);
+  for (const section of sections) {
+    const lines = section.split("\n");
+    const title = (lines[0]?.trim() ?? "").replace(/^#+\s*/, "");
+    if (!title) continue;
+    const companyLine = lines.find((l) => l.startsWith("— "));
+    const companyName = companyLine?.replace(/^—\s*/, "").trim() ?? title;
+    const positionLine = lines.find((l) => l.startsWith("Cargo:"));
+    const position = positionLine?.replace(/^Cargo:\s*/, "").trim() ?? undefined;
+    const emailLine = lines.find((l) => l.startsWith("Email:"));
+    const email = emailLine?.replace(/^Email:\s*/, "").trim() ?? undefined;
+    const linkedinLine = lines.find((l) => l.startsWith("LinkedIn:"));
+    const linkedin = linkedinLine?.replace(/^LinkedIn:\s*/, "").trim() ?? undefined;
+    const sourceLine = lines.find((l) => l.startsWith("_("));
+    const source =
+      sourceLine?.match(/\(([^·]+)·/)?.[1]?.trim() ?? "Hunter.io";
+    const domain = sourceLine?.match(/\(([^)]+)\s*·/)?.[1]?.trim() ?? "—";
+
+    const slug = (s: string) =>
+      s
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 60);
+
+    const personId = slug(title);
+    const companyId = slug(companyName);
+    const now = new Date().toISOString();
+
+    people.push({
+      id: personId,
+      name: title,
+      role: position,
+      email,
+      linkedin,
+      companyId,
+      source: "Hunter.io + Claude Sonnet 5",
+      addedAt: now,
+    });
+    if (!companies.find((c) => c.id === companyId)) {
+      companies.push({
+        id: companyId,
+        name: companyName,
+        source: `Hunter.io · ${domain}`,
+        stage: "new",
+        addedAt: now,
+      });
+    }
+  }
+
+  return { companies, people };
 }
