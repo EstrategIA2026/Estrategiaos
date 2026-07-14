@@ -161,7 +161,7 @@ export async function updateAvatar(
   return { success: "Foto atualizada." };
 }
 
-export async function removeAvatar(): Promise<AvatarState> {
+export async function removeAvatar(): Promise<void> {
   const { supabase, user } = await requireUser();
 
   const { data: row } = await supabase
@@ -180,5 +180,4 @@ export async function removeAvatar(): Promise<AvatarState> {
     .eq("id", user.id);
 
   revalidatePath("/", "layout");
-  return { success: "Foto removida." };
 }
