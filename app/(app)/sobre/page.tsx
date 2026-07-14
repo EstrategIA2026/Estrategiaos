@@ -26,7 +26,7 @@ export default function SobrePage() {
         </SciaTitle>
       </Topbar>
 
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 md:py-16">
+      <main className="w-full flex-1 px-6 py-12 md:px-8 md:py-16">
         <Hero />
         <Origem />
         <Manifesto />
@@ -40,14 +40,14 @@ export default function SobrePage() {
 
 function Hero() {
   return (
-    <header className="mb-16 max-w-3xl">
+    <header className="mb-16 max-w-4xl">
       <h2 className="scia-tag mb-4">[ O QUE E ]</h2>
       <p className="text-xl leading-relaxed text-foreground md:text-2xl">
         <strong className="text-brand">Estrateg[IA]</strong> e um negocio de
         educacao em IA para coordenadores de nucleo em hospitais
         brasileiros. Comeca dando aulas de graca no YouTube.
       </p>
-      <p className="mt-3 text-base leading-relaxed text-muted-foreground md:text-lg">
+      <p className="mt-3 max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
         A partir do canal, ofereco agentes prontos para o coordenador usar
         no dia a dia e, se ele quiser, uma consultoria sob medida: avalio
         as necessidades dele e crio ou ensino a criar dependendo do pacote
