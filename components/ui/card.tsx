@@ -2,8 +2,8 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// Estrateg[IA]: cantos vivos, borda seca, glow laranja + lift no hover
-// (efeito .scia-card definido em globals.css).
+// Estrateg[IA]: cantos medios (rounded-lg, 8px), borda seca, fundo card.
+// Sem efeito scia-card aqui — aplicado caso a caso onde combina.
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -11,7 +11,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-md border bg-card text-card-foreground shadow-sm scia-card",
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
     {...props}

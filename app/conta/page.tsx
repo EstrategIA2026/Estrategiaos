@@ -70,7 +70,7 @@ export default async function ContaPage() {
           <EmailForm email={profile.email} />
           <PasswordForm />
 
-          <div className="rounded-md border bg-card p-6 scia-card">
+          <div className="rounded-lg border bg-card p-6">
             <h2 className="mb-1 font-display text-lg font-extrabold">
               Encerrar sessao
             </h2>
