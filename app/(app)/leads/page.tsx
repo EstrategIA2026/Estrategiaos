@@ -8,6 +8,7 @@ import { Breadcrumb } from "@/components/layout/breadcrumb";
 import { Topbar } from "@/components/layout/topbar";
 import { LeadsWorkspace } from "@/components/leads/leads-workspace";
 import { LeadsSearchButton } from "@/app/leads/leads-search-button";
+import { ClearLeadsButton } from "@/app/leads/clear-leads-button";
 import { listCompanies, listPeople } from "@/lib/leads/data";
 import { countByStage, LEAD_STAGE_LABEL } from "@/lib/leads/types";
 
@@ -41,7 +42,10 @@ export default async function LeadsPage() {
               funil.
             </p>
           </header>
-          <LeadsSearchButton />
+          <div className="flex flex-col items-end gap-2">
+            <LeadsSearchButton />
+            <ClearLeadsButton />
+          </div>
         </div>
       </Topbar>
 

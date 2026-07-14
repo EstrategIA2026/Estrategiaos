@@ -260,3 +260,50 @@ function renderHunterLeadsBlock(leads: HunterLead[]): string {
   });
   return blocks.join("\n\n");
 }
+
+/**
+ * Limpa TODOS os leads do card `validacao/leads`. Mantem a estrutura
+ * (frontmatter com revision, status) mas zera o body. O proximo search
+ * comeca do zero.
+ */
+export async function clearLeads(): Promise<{ error?: string; success?: string }> {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+
+  const supabase = await createClient();
+  const { data: leadsDoc } = await supabase
+    .from("content_entities")
+    .select("frontmatter")
+    .eq("user_id", profile.id)
+    .eq("entity_id", "validacao/leads")
+    .maybeSingle();
+
+  const prevFrontmatter =
+    (leadsDoc?.frontmatter as Record<string, unknown> | null) ?? {};
+  const prevRevision =
+    typeof prevFrontmatter.revision === "number" ? prevFrontmatter.revision : 0;
+
+  const { error: writeError } = await supabase.from("content_entities").upsert(
+    {
+      user_id: profile.id,
+      entity_id: "validacao/leads",
+      section: "validacao",
+      frontmatter: {
+        ...prevFrontmatter,
+        revision: prevRevision + 1,
+        status: "empty",
+        last_edited_by: profile.email,
+      },
+      body: "",
+      updated: new Date().toISOString(),
+    },
+    { onConflict: "user_id,entity_id" },
+  );
+  if (writeError) {
+    return { error: `Erro ao limpar: ${writeError.message}` };
+  }
+
+  revalidatePath("/leads");
+  revalidatePath("/", "layout");
+  return { success: "Todos os leads foram removidos." };
+}
