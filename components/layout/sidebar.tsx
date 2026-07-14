@@ -48,13 +48,7 @@ export function Sidebar({
     >
       <div className="flex h-full flex-col rounded-md bg-sidebar px-4 py-5 text-sidebar-foreground">
         {/* Marca com quadradinho de acento laranja. */}
-        <div className="flex shrink-0 items-center gap-2.5 px-2 pb-4">
-          <span
-            aria-hidden
-            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand text-sm font-extrabold text-brand-foreground scia-glow"
-          >
-            E
-          </span>
+        <div className="flex shrink-0 items-center px-2 pb-4">
           <span className="text-base font-extrabold tracking-tight">
             Estrateg<span className="text-brand">[IA]</span>
           </span>
