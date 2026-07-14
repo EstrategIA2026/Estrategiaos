@@ -22,7 +22,7 @@ export function SciaTitle({
   as?: "h1" | "h2" | "h3" | "h4";
   className?: string;
   children: React.ReactNode;
-} & React.HTMLAttributes<HTMLElement>) {
+} & Omit<React.HTMLAttributes<HTMLElement>, "className">) {
   const Comp = (as ?? "h1") as React.ElementType;
 
   const sizeClass =

@@ -32,7 +32,12 @@ const markdownComponents = {
     <h1 className="mb-3 mt-4 text-xl font-semibold first:mt-0" {...props} />
   ),
   h2: (props: ComponentPropsWithoutRef<"h2">) => (
-    <SciaTitle as="h2" className="mb-2 mt-4 text-lg first:mt-0" {...props} />
+    <SciaTitle
+      as="h2"
+      className="mb-2 mt-4 text-lg first:mt-0"
+    >
+      {props.children}
+    </SciaTitle>
   ),
   h3: (props: ComponentPropsWithoutRef<"h3">) => (
     <h3 className="mb-2 mt-3 text-base font-semibold first:mt-0" {...props} />
