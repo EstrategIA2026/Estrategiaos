@@ -11,6 +11,7 @@ import {
 } from "@/lib/knowledge/conversations";
 import { retrieveContext } from "@/lib/knowledge/retrieval";
 import { indexMessageForCurrentUser } from "@/lib/knowledge/indexing";
+import { buildTenantSystemPrompt, loadTenantContext } from "@/lib/knowledge/tenant-context";
 import type { KnowledgeMatch } from "@/lib/knowledge/types";
 
 export const runtime = "nodejs"; // precisa de rede (AI SDK) e cliente Supabase server
@@ -59,43 +60,41 @@ function deriveTitle(text: string): string {
   return oneLine.length > 48 ? `${oneLine.slice(0, 48).trimEnd()}…` : oneLine;
 }
 
-/** Monta o system prompt em pt-BR, embutindo os trechos recuperados por fonte. */
-function buildSystemPrompt(matches: KnowledgeMatch[]): string {
-  const base = [
-    "Voce e o assistente do BusinessOS, um OS de decisao para o founder.",
-    "Responda SEMPRE ancorado na base de conhecimento do founder (as entidades do",
-    "negocio e o historico de conversas), em portugues do Brasil, de forma direta e util.",
-  ].join(" ");
+/** Monta o system prompt combinando contexto do BusinessOS + RAG. */
+function buildSystemPrompt(
+  tenantContext: string,
+  matches: KnowledgeMatch[],
+): string {
+  const tenantPrompt = buildTenantSystemPrompt(tenantContext);
 
   if (matches.length === 0) {
     return [
-      base,
+      tenantPrompt,
       "",
-      "Nenhum trecho relevante foi recuperado da base para esta pergunta.",
-      "Responda com o que voce sabe, mas sinalize que a resposta nao esta ancorada",
-      "no contexto do founder e sugira registrar/atualizar a entidade correspondente.",
+      "Historico de conversas previas nao trouxe match relevante para esta",
+      "pergunta. Use o estado completo do BusinessOS acima como fonte de",
+      "verdade.",
     ].join("\n");
   }
 
-  const context = matches
+  const ragContext = matches
     .map((m, i) => {
       const label =
         m.sourceType === "entity"
           ? `Entidade ${m.sourceId}`
           : `Conversa anterior (${m.sourceId})`;
-      return `[Fonte ${i + 1} — ${label}]\n${m.content}`;
+      return `[Historico ${i + 1} — ${label}]\n${m.content}`;
     })
     .join("\n\n");
 
   return [
-    base,
+    tenantPrompt,
     "",
-    "Use os trechos abaixo como fonte primaria. Cite a fonte quando fizer sentido.",
-    "Se os trechos nao cobrirem a pergunta, diga o que falta em vez de inventar.",
+    "Tambem existem trechos relevantes do historico de conversas anteriores:",
     "",
-    "=== CONTEXTO RECUPERADO ===",
-    context,
-    "=== FIM DO CONTEXTO ===",
+    "=== HISTORICO RECUPERADO ===",
+    ragContext,
+    "=== FIM DO HISTORICO ===",
   ].join("\n");
 }
 
@@ -166,7 +165,8 @@ export async function POST(req: Request): Promise<Response> {
     // Persistir a mensagem do usuario e recuperar o contexto RAG.
     await addMessage(conversationId, "user", userText);
     const matches = await retrieveContext(userText);
-    const system = buildSystemPrompt(matches);
+    const tenantContext = await loadTenantContext();
+    const system = buildSystemPrompt(tenantContext, matches);
 
     // Nesta versao do AI SDK v7 `convertToModelMessages` e assincrona.
     const modelMessages = await convertToModelMessages(messages);
