@@ -384,10 +384,14 @@ function sanitizeReport(input: unknown): unknown {
     ...(obj.generated_at ? { generated_at: asString(obj.generated_at) } : {}),
     ...(obj.generated_by ? { generated_by: asString(obj.generated_by) } : {}),
     kpis: Array.isArray(obj.kpis)
-      ? obj.kpis.map(safeKpi).filter((x): x is Record<string, unknown> => x != null)
+      ? (obj.kpis.map(safeKpi).filter((x) => x != null) as Array<
+          ReturnType<typeof safeKpi>
+        >)
       : [],
     insights: Array.isArray(obj.insights)
-      ? obj.insights.map(safeInsight).filter((x): x is Record<string, unknown> => x != null)
+      ? (obj.insights.map(safeInsight).filter((x) => x != null) as Array<
+          ReturnType<typeof safeInsight>
+        >)
       : [],
   };
 }
