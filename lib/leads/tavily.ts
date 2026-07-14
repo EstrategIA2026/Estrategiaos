@@ -25,6 +25,8 @@ interface SearchOptions {
   includeDomains?: string[];
   /** Temas a excluir. */
   excludeDomains?: string[];
+  /** Tavily AI answer blob (nao usamos). */
+  includeAnswer?: boolean;
 }
 
 /**
