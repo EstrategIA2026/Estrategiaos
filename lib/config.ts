@@ -59,6 +59,12 @@ const schema = z
       z.string().min(1).optional(),
     ),
 
+    // Hunter.io — busca de emails de decisores por dominio (cabo solto).
+    HUNTER_API_KEY: z.preprocess(
+      emptyToUndefined,
+      z.string().min(1).optional(),
+    ),
+
     // --- Storage ---
     SUPABASE_STORAGE_BUCKET: z.string().default("attachments"),
   })
