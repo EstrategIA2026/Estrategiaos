@@ -1,23 +1,23 @@
 "use server";
 
 /**
- * Acoes de Leads — busca empresas via Tavily + Claude Fable 5 (kpalabz),
- * grava no card `validacao/leads` como `needs_review` para a founder revisar.
+ * Acoes de Leads — busca empresas + pessoas via Tavily + Claude.
+ * Grava no card `validacao/leads` como `needs_review` para a founder revisar.
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentProfile } from "@/lib/auth/profile";
 import { AI_ENABLED, CHAT_ENABLED } from "@/lib/config";
-import { LEAD_DOMAINS, LEAD_QUERY_SUFFIX } from "@/lib/leads/domains";
-import { structureLeads } from "@/lib/leads/structure";
 import { tavily } from "@/lib/leads/tavily";
+import { structureLeads } from "@/lib/leads/structure";
 import { createClient } from "@/lib/supabase/server";
 
 export type LeadsSearchState = {
   error?: string;
   success?: string;
   count?: number;
+  debug?: string;
 } | undefined;
 
 interface ParsedLead {
@@ -31,10 +31,11 @@ interface ParsedLead {
 
 /**
  * Le o card `direcao/perfil-ideal-de-cliente`, usa Tavily para buscar
- * empresas na internet e Claude Fable 5 (kpalabz) para extrair leads
- * estruturados. Grava como `needs_review` no card `validacao/leads`.
+ * EMPRESAS HOSPITALARES + PESSOAS, e Claude (Sonnet 5) para extrair
+ * leads estruturados. Grava como `needs_review` em `validacao/leads`.
  *
- * Quantidade padrao: 5 leads (controla custo e ruido).
+ * Query focada em **encontrar hospitais reais brasileiros** com palavras
+ * chave que funcionam em qualquer fonte.
  */
 export async function searchLeads(
   _prev: LeadsSearchState,
@@ -62,6 +63,9 @@ export async function searchLeads(
     .eq("user_id", profile.id)
     .eq("entity_id", "direcao/perfil-ideal-de-cliente")
     .maybeSingle();
+
+  const debugLog: string[] = [];
+
   if (icpError) {
     return { error: `Erro ao ler ICP: ${icpError.message}` };
   }
@@ -77,62 +81,69 @@ export async function searchLeads(
     return { error: "ICP vazio. Preencha o card antes de buscar." };
   }
 
-  // Tavily limita queries a 400 chars. Usamos so o summary curto do ICP
-  // (ate 280 chars) + o sufixo de targeting. Se o ICP for maior, Claude
-  // depois ve o icpText completo via `structureLeads`.
-  const icpShort =
-    icpText.length > 280
-      ? `${icpText.slice(0, 280).replace(/\s+\S*$/, "")}…`
-      : icpText;
+  debugLog.push(`ICP length: ${icpText.length} chars`);
 
-  // 2. Tavily: busca empresas + pessoas em fontes publicas. Fazemos 2
-  // buscas paralelas — uma focada em fontes de saude, outra generica — e
-  // concatenamos resultados para o Claude filtrar.
+  // 2. Tavily: query simples e eficaz. Sem dominio restrito (Tavily ja
+  // indexa bem a web aberta brasileira; incluir dominios especificos
+  // as vezes reduz os resultados).
+  // Query maxima: 400 chars. Tiramos o sufixo LEAD_QUERY_SUFFIX quando o ICP
+  // sozinho ja alcancar 400; caso contrario, encurtamos o ICP.
+  const baseQuery =
+    "hospitais filantropicos Brasil 80 a 500 leitos coordenadores Enfermagem NEP CCIH Qualidade";
+  const query =
+    icpText.length + baseQuery.length + 6 < 400
+      ? `${icpText.slice(0, 380 - baseQuery.length - 6)} ${baseQuery}`
+      : baseQuery;
+
+  debugLog.push(`Tavily query (${query.length} chars): ${query.slice(0, 100)}...`);
+
   let tavilyResults;
   try {
-    const [r1, r2] = await Promise.all([
-      tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 6, {
-        includeDomains: LEAD_DOMAINS,
-        searchDepth: "advanced",
-      }).catch(() => []),
-      tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 6, {
-        searchDepth: "advanced",
-      }).catch(() => []),
-    ]);
-    tavilyResults = [...r1, ...r2];
-    // dedup por url
-    const seen = new Set<string>();
-    tavilyResults = tavilyResults.filter((r) => {
-      if (seen.has(r.url)) return false;
-      seen.add(r.url);
-      return true;
+    tavilyResults = await tavily(query, 10, {
+      searchDepth: "advanced",
+      includeAnswer: false,
     });
   } catch (e) {
     return {
       error: `Tavily falhou: ${e instanceof Error ? e.message : String(e)}`,
     };
   }
+
+  debugLog.push(`Tavily returned ${tavilyResults.length} results`);
+  tavilyResults.slice(0, 5).forEach((r, i) => {
+    debugLog.push(`  [${i + 1}] ${r.title.slice(0, 60)} -> ${r.url.slice(0, 50)}`);
+  });
+
   if (tavilyResults.length === 0) {
     return {
       error:
-        "Tavily nao retornou resultados. Tente de novo ou ajuste os dominios.",
+        "Tavily nao retornou resultados para a busca. Tente reformular o ICP.",
+      debug: debugLog.join("\n"),
     };
   }
-  if (tavilyResults.length === 0) {
-    return { error: "Tavily nao retornou resultados." };
-  }
 
-  // 3. Claude Fable 5 estrutura os leads.
+  // 3. Claude Sonnet 5 estrutura os leads.
   let structured: ParsedLead[];
   try {
     structured = await structureLeads(icpText, tavilyResults, limit);
   } catch (e) {
     return {
       error: `IA falhou: ${e instanceof Error ? e.message : String(e)}`,
+      debug: debugLog.join("\n"),
     };
   }
 
-  // 4. Le o card `validacao/leads` atual.
+  debugLog.push(`Claude returned ${structured.length} structured leads`);
+
+  if (structured.length === 0) {
+    return {
+      error:
+        "Claude nao extraiu nenhum lead dos resultados do Tavily. O ICP pode estar muito especifico ou o Tavily trouxe resultados pouco alinhados.",
+      debug: debugLog.join("\n"),
+    };
+  }
+
+  // 4. Grava no card `validacao/leads` como needs_review.
   const { data: leadsDoc } = await supabase
     .from("content_entities")
     .select("body, frontmatter")
@@ -148,13 +159,11 @@ export async function searchLeads(
       : 1;
   const prevBody = String(leadsDoc?.body ?? "");
 
-  // 5. Append os leads novos no body do card.
   const newBody =
     prevBody.trim().length > 0
       ? `${prevBody.trim()}\n\n---\n\n${renderLeadsBlock(structured)}`
       : renderLeadsBlock(structured);
 
-  // 6. Upsert no Supabase (frontend + status needs_review).
   const { error: writeError } = await supabase.from("content_entities").upsert(
     {
       user_id: profile.id,
@@ -172,7 +181,10 @@ export async function searchLeads(
     { onConflict: "user_id,entity_id" },
   );
   if (writeError) {
-    return { error: `Erro ao gravar: ${writeError.message}` };
+    return {
+      error: `Erro ao gravar: ${writeError.message}`,
+      debug: debugLog.join("\n"),
+    };
   }
 
   revalidatePath("/leads");
@@ -181,6 +193,7 @@ export async function searchLeads(
   return {
     success: `${structured.length} leads encontrados. Revise e aprove na aba Leads.`,
     count: structured.length,
+    debug: debugLog.join("\n"),
   };
 }
 
@@ -200,7 +213,7 @@ function renderLeadsBlock(leads: ParsedLead[]): string {
             .join("; ")}`
         : "";
     const notes = c.notes ? `\n\n${c.notes}` : "";
-    return `${head}\n\n${c.summary}${source}${contacts}${notes}\n\n_(${c.kind ?? "PJ"} · Tavily + Claude Fable 5 · ${now})_`;
+    return `${head}\n\n${c.summary}${source}${contacts}${notes}\n\n_(${c.kind ?? "PJ"} · Tavily + Claude Sonnet 5 · ${now})_`;
   });
   return blocks.join("\n\n");
 }

@@ -51,7 +51,14 @@ export function LeadsSearchButton() {
         {pending ? "Buscando..." : "Buscar leads com IA"}
       </Button>
       {state?.error && (
-        <p className="basis-full text-xs text-destructive">{state.error}</p>
+        <details className="basis-full text-xs text-destructive">
+          <summary className="cursor-pointer font-medium">{state.error}</summary>
+          {state.debug && (
+            <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border bg-muted p-3 text-[11px] text-foreground/80">
+              {state.debug}
+            </pre>
+          )}
+        </details>
       )}
       {state?.success && (
         <p className="basis-full text-xs text-brand">{state.success}</p>
