@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
  * Botao "Buscar leads com IA" — chama Tavily + Claude Fable 5 para gerar
  * novos leads a partir do card `direcao/perfil-ideal-de-cliente`.
  *
- * Client component: usa useActionState para feedback inline.
+ * Client component: usa useActionState para feedback inline. Tem um Select
+ * para a founder escolher a quantidade (5, 10 ou 20).
  */
 export function LeadsSearchButton() {
   const [state, formAction, pending] = useActionState<
@@ -19,12 +20,28 @@ export function LeadsSearchButton() {
   >(searchLeads, undefined);
 
   return (
-    <form action={formAction} className="flex items-center gap-2">
-      <input
-        type="hidden"
+    <form
+      action={formAction}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <label
+        htmlFor="lead-limit"
+        className="font-mono text-[11px] tracking-wider text-muted-foreground"
+      >
+        QTD
+      </label>
+      <select
+        id="lead-limit"
         name="limit"
-        value="5"
-      />
+        defaultValue="5"
+        disabled={pending}
+        className="rounded-md border border-input bg-muted px-2 py-1 text-xs font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="20">20</option>
+      </select>
       <Button type="submit" variant="brand" size="sm" disabled={pending}>
         {pending ? (
           <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -34,11 +51,12 @@ export function LeadsSearchButton() {
         {pending ? "Buscando..." : "Buscar leads com IA"}
       </Button>
       {state?.error && (
-        <p className="text-xs text-destructive">{state.error}</p>
+        <p className="basis-full text-xs text-destructive">{state.error}</p>
       )}
       {state?.success && (
-        <p className="text-xs text-brand">{state.success}</p>
+        <p className="basis-full text-xs text-brand">{state.success}</p>
       )}
     </form>
   );
 }
+
