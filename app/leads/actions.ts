@@ -77,10 +77,18 @@ export async function searchLeads(
     return { error: "ICP vazio. Preencha o card antes de buscar." };
   }
 
+  // Tavily limita queries a 400 chars. Usamos so o summary curto do ICP
+  // (ate 280 chars) + o sufixo de targeting. Se o ICP for maior, Claude
+  // depois ve o icpText completo via `structureLeads`.
+  const icpShort =
+    icpText.length > 280
+      ? `${icpText.slice(0, 280).replace(/\s+\S*$/, "")}…`
+      : icpText;
+
   // 2. Tavily: busca empresas + pessoas em fontes publicas.
   let tavilyResults;
   try {
-    tavilyResults = await tavily(`${icpText} ${LEAD_QUERY_SUFFIX}`, Math.max(limit * 2, 6), {
+    tavilyResults = await tavily(`${icpShort} ${LEAD_QUERY_SUFFIX}`, 8, {
       includeDomains: LEAD_DOMAINS,
       searchDepth: "advanced",
     });

@@ -31,6 +31,6 @@ export const LEAD_DOMAINS = [
   "enfermagem",
 ];
 
-/** Query adicional Tavily para focar em pessoas/coordenadores. */
+/** Query adicional Tavily para focar em pessoas/coordenadores. Curta (max ~100 chars) para nao estourar o limite de 400 da Tavily. */
 export const LEAD_QUERY_SUFFIX =
-  " enfermeiro coordenador NEP CCIH Qualidade hospital gestao saude LinkedIn instagram perfil contato";
+  "coordenador enfermeiro NEP CCIH Qualidade hospital perfil LinkedIn";
