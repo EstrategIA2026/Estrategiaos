@@ -4,6 +4,7 @@ import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   updateEmail,
   updateName,
@@ -80,17 +81,15 @@ export function PasswordForm() {
   return (
     <FormSection titulo="Senha" subtitulo="Minimo 6 caracteres.">
       <form action={formAction} className="space-y-3">
-        <Input
+        <PasswordInput
           name="password"
-          type="password"
           placeholder="Nova senha"
           minLength={6}
           required
           disabled={pending}
         />
-        <Input
+        <PasswordInput
           name="password_confirm"
-          type="password"
           placeholder="Confirmar nova senha"
           minLength={6}
           required

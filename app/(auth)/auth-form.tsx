@@ -7,6 +7,7 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import type { AuthState } from "./actions";
 
 interface AuthFormProps {
@@ -76,10 +77,9 @@ export function AuthForm({
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="password">Senha</Label>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete={isSignup ? "new-password" : "current-password"}
             required
             minLength={isSignup ? 6 : undefined}
