@@ -90,3 +90,44 @@ export async function signUp(
   // wizard de onboarding antes de entrar na app.
   redirect("/onboarding");
 }
+
+/**
+ * Envia um link de recuperacao de senha para o e-mail informado.
+ * O Supabase manda um magic link para o usuario redefinir a senha pelo
+ * proprio navegador. Por seguranca, nao revela se o e-mail existe ou nao:
+ * sempre devolve uma mensagem generica de "se existir, voce recebera".
+ */
+export async function resetPassword(
+  _prev: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Informe o e-mail." };
+  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { error: "E-mail inválido." };
+  }
+
+  const supabase = await createClient();
+  // Usa o origin atual do request (host da Vercel em prod). Necessario para
+  // o Supabase montar o link de redirect de volta a nossa tela de confirmacao.
+  const origin =
+    typeof formData.get("_origin") === "string"
+      ? String(formData.get("_origin"))
+      : null;
+  const redirectTo = origin ? `${origin}/atualizar-senha` : undefined;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+  if (error) {
+    // Mesmo em caso de erro, mensagem generica para nao vazar existencia.
+    // Loga no server so para debug.
+    console.error("[resetPassword]", error.message);
+  }
+
+  return {
+    info: "Se o e-mail estiver cadastrado, voce recebera um link para redefinir a senha.",
+  };
+}

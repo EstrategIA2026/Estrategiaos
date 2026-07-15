@@ -15,6 +15,7 @@ export default function LoginPage() {
       footerText="Não tem conta?"
       footerHref="/signup"
       footerLinkLabel="Criar conta"
+      showForgotPassword
     />
   );
 }
