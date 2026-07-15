@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 
-import { clearLeads } from "@/app/leads/actions-hunter";
+import { clearLeads } from "@/app/leads/actions";
 import { Button } from "@/components/ui/button";
 
 /**
